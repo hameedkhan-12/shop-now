@@ -99,6 +99,9 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:../../packages/database
+      '@repo/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@types/express':
         specifier: ^5.0.6
         version: 5.0.6

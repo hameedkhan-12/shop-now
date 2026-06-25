@@ -12,6 +12,7 @@
   "type": "module",
   "dependencies": {
     "@repo/db" : "workspace:*",
+    "@repo/shared": "workspace:*",
     "@types/express": "^5.0.6",
     "express": "^5.2.1"
   }

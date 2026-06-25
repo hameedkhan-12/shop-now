@@ -1,9 +1,15 @@
 import express from "express"
-import {prisma} from "@repo/db"
-const app = express()
 
-app.get("/", (req, res) => {
-    res.send("Hello from API!")
+const app = express()
+const PORT = process.env.PORT || 4000
+
+app.use("/api/routes", productRoutes)
+
+app.get("health", (_req, res) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+  })
 })
 
-app.listen(4000, () => console.log("API listening on port 4000"))
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
