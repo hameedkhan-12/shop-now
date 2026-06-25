@@ -1,7 +1,7 @@
 import type { Request, Response } from "express"
 
 import { prisma } from "@repo/db"
-import type { CreateProductInput } from "@repo/shared"
+import type { CreateProductInput, UpdateProductInput } from "@repo/shared"
 
 export async function getProducts(req: Request, res: Response) {
   try {
@@ -95,4 +95,71 @@ export async function createProduct(req: Request, res: Response) {
       error: "Failed to create product",
     })
   }
+}
+
+export async function updateProduct(req: Request, res: Response) {
+  const body: UpdateProductInput = req.body
+
+  const existing = await prisma.product.findUnique({
+    where: {
+      id: req.params.id as string,
+    },
+  })
+
+  if (!existing) {
+    return res.status(404).json({
+      success: false,
+      error: "Product not found",
+    })
+  }
+
+  try {
+    const product = await prisma.product.update({
+        where: {
+            id: req.params.id as string,
+        },
+        data: body
+    })
+
+    res.json({
+        success: true,
+        data: product,
+        message: "Product updated"
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Failed to update product",
+    })
+  }
+}
+
+export async function deleteProduct(req: Request, res: Response){
+    try {
+        const existing = await prisma.product.findUnique({
+            where: {
+                id: req.params.id as string,
+            }
+        })
+
+        if (!existing) {
+            return res.status(404).json({
+                success: false,
+                error: "Product not found",
+            })
+        }
+
+        await prisma.product.delete({
+            where: {
+                id: req.params.id as string,
+            }
+        })
+
+        res.json({
+            success: true,
+            message: "Product deleted"
+        })
+    } catch (error) {
+        
+    }
 }
