@@ -35,6 +35,7 @@ export async function getProducts(req: Request, res: Response) {
       },
     })
   } catch (error) {
+    console.error(error)
     res.status(500).json({
       success: false,
       error: "Failed to fetch products",

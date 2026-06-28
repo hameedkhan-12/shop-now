@@ -19,7 +19,6 @@ export default function RootLayout({
 }>) {
   return (
     <>
-      <Navbar />
       <html
         lang="en"
         suppressHydrationWarning
@@ -31,7 +30,11 @@ export default function RootLayout({
         )}
       >
         <body>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            <Navbar />
+
+            {children}
+          </ThemeProvider>
         </body>
       </html>
     </>

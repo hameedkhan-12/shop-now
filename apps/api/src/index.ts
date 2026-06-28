@@ -1,7 +1,12 @@
 import express from "express"
-import productRoutes from './routes/product.routes.js'
+import productRoutes from "./routes/product.routes.js"
 const app = express()
+import dotenv from "dotenv"
+
+dotenv.config()
 const PORT = process.env.PORT || 4000
+
+app.use(express.json())
 
 app.use("/api/products", productRoutes)
 
