@@ -1,16 +1,30 @@
 services:
-  db:
+  postgres-primary:
     image: postgres:16-alpine
-    container_name: ecommerce_db
+    container_name: postgres-primary
     restart: unless-stopped
+
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ecommerce
+
     ports:
       - "5432:5432"
+
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres-primary-data:/var/lib/postgresql/data
+      - ./docker/postgres/primary/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./docker/postgres/primary/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - ./docker/postgres/primary/init:/docker-entrypoint-initdb.d
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -18,4 +32,4 @@ services:
       retries: 5
 
 volumes:
-  pgdata:
+  postgres-primary-data:
