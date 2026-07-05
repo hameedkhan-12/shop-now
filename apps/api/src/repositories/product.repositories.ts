@@ -1,4 +1,4 @@
-import { prisma } from "@repo/db"
+import { Prisma, prisma } from "@repo/db"
 import type { CreateProductInput, UpdateProductInput } from "@repo/shared"
 
 class ProductRepository {
@@ -42,20 +42,40 @@ class ProductRepository {
   }
 
   async updateProduct(id: string, data: UpdateProductInput) {
-    return prisma.product.update({
-      where: {
-        id,
-      },
-      data,
-    })
+    try {
+      return await prisma.product.update({
+        where: {
+          id,
+        },
+        data,
+      })
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2025"
+      ) {
+        return null
+      }
+      throw error
+    }
   }
 
-  async deleteProduct(id: string){
-    return prisma.product.delete({
-      where: {
-        id,
-      },
-    })
+  async deleteProduct(id: string) {
+    try {
+      return await prisma.product.delete({
+        where: {
+          id,
+        },
+      })
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2025"
+      ) {
+        return false
+      }
+      throw error
+    }
   }
 }
 

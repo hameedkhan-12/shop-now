@@ -28,7 +28,7 @@ export async function getProducts(req: Request, res: Response) {
 export async function getProductById(req: Request, res: Response) {
   try {
     const id = req.params.id as string
-    const product = await productRepository.getProductById(id);
+    const product = await productRepository.getProductById(id)
 
     if (!product) {
       return res.status(404).json({
@@ -60,7 +60,7 @@ export async function createProduct(req: Request, res: Response) {
       })
     }
 
-    const product = await productRepository.createProduct(body);
+    const product = await productRepository.createProduct(body)
 
     res.status(201).json({
       success: true,
@@ -78,48 +78,35 @@ export async function createProduct(req: Request, res: Response) {
 export async function updateProduct(req: Request, res: Response) {
   const body: UpdateProductInput = req.body
   const id = req.params.id as string
-  const existing = await productRepository.getProductById(id);
 
-  if (!existing) {
+  const product = await productRepository.updateProduct(id, body)
+
+  if (!product) {
     return res.status(404).json({
       success: false,
       error: "Product not found",
     })
   }
-
-  try {
-    const product = await productRepository.updateProduct(id, body);
-
-    res.json({
-      success: true,
-      data: product,
-      message: "Product updated",
-    })
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: "Failed to update product",
-    })
-  }
+  res.json({
+    success: true,
+    data: product,
+    message: "Product updated",
+  })
 }
 
 export async function deleteProduct(req: Request, res: Response) {
-  try {
-    const id = req.params.id as string
-    const existing = await productRepository.getProductById(id);
+  const id = req.params.id as string
 
-    if (!existing) {
-      return res.status(404).json({
-        success: false,
-        error: "Product not found",
-      })
-    }
+  const deleted = await productRepository.deleteProduct(id)
 
-    await productRepository.deleteProduct(id);
-
-    res.json({
-      success: true,
-      message: "Product deleted",
+  if (!deleted) {
+    return res.status(404).json({
+      success: false,
+      error: "Product not found",
     })
-  } catch (error) {}
+  }
+  res.json({
+    success: true,
+    message: "Product deleted",
+  })
 }
