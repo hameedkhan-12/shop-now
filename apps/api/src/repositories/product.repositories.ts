@@ -1,4 +1,4 @@
-import { Prisma, prisma } from "@repo/db"
+import { Prisma, readDb, writeDb } from "@repo/db"
 import type { CreateProductInput, UpdateProductInput } from "@repo/shared"
 
 class ProductRepository {
@@ -7,7 +7,7 @@ class ProductRepository {
     const where = category ? { category } : {}
 
     const [data, total] = await Promise.all([
-      prisma.product.findMany({
+      readDb.product.findMany({
         where,
         skip,
         take: limit,
@@ -15,7 +15,7 @@ class ProductRepository {
           createdAt: "desc",
         },
       }),
-      prisma.product.count({ where }),
+      readDb.product.count({ where }),
     ])
 
     return {
@@ -28,7 +28,7 @@ class ProductRepository {
   }
 
   async getProductById(productId: string) {
-    return await prisma.product.findUnique({
+    return await readDb.product.findUnique({
       where: {
         id: productId,
       },
@@ -36,14 +36,14 @@ class ProductRepository {
   }
 
   async createProduct(data: CreateProductInput) {
-    return prisma.product.create({
+    return writeDb.product.create({
       data,
     })
   }
 
   async updateProduct(id: string, data: UpdateProductInput) {
     try {
-      return await prisma.product.update({
+      return await writeDb.product.update({
         where: {
           id,
         },
@@ -62,7 +62,7 @@ class ProductRepository {
 
   async deleteProduct(id: string) {
     try {
-      return await prisma.product.delete({
+      return await writeDb.product.delete({
         where: {
           id,
         },
