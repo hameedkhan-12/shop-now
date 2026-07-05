@@ -2,37 +2,19 @@ import type { Request, Response } from "express"
 
 import { prisma } from "@repo/db"
 import type { CreateProductInput, UpdateProductInput } from "@repo/shared"
+import { productRepository } from "../repositories/product.repositories.js"
 
 export async function getProducts(req: Request, res: Response) {
   try {
     const page = Number(req.query.page) || 1
     const limit = Number(req.query.limit) || 12
     const category = req.query.category as string | undefined
-    const skip = (page - 1) * limit
 
-    const where = category ? { category } : {}
-
-    const [data, total] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: {
-          createdAt: "desc",
-        },
-      }),
-      prisma.product.count({ where }),
-    ])
+    const result = await productRepository.getProducts(page, limit, category)
 
     res.json({
       success: true,
-      data: {
-        data,
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      data: result,
     })
   } catch (error) {
     console.error(error)
@@ -45,11 +27,8 @@ export async function getProducts(req: Request, res: Response) {
 
 export async function getProductById(req: Request, res: Response) {
   try {
-    const product = await prisma.product.findUnique({
-      where: {
-        id: req.params.id as string,
-      },
-    })
+    const id = req.params.id as string
+    const product = await productRepository.getProductById(id);
 
     if (!product) {
       return res.status(404).json({
@@ -81,9 +60,7 @@ export async function createProduct(req: Request, res: Response) {
       })
     }
 
-    const product = await prisma.product.create({
-      data: body,
-    })
+    const product = await productRepository.createProduct(body);
 
     res.status(201).json({
       success: true,
@@ -100,12 +77,8 @@ export async function createProduct(req: Request, res: Response) {
 
 export async function updateProduct(req: Request, res: Response) {
   const body: UpdateProductInput = req.body
-
-  const existing = await prisma.product.findUnique({
-    where: {
-      id: req.params.id as string,
-    },
-  })
+  const id = req.params.id as string
+  const existing = await productRepository.getProductById(id);
 
   if (!existing) {
     return res.status(404).json({
@@ -115,17 +88,12 @@ export async function updateProduct(req: Request, res: Response) {
   }
 
   try {
-    const product = await prisma.product.update({
-        where: {
-            id: req.params.id as string,
-        },
-        data: body
-    })
+    const product = await productRepository.updateProduct(id, body);
 
     res.json({
-        success: true,
-        data: product,
-        message: "Product updated"
+      success: true,
+      data: product,
+      message: "Product updated",
     })
   } catch (error) {
     res.status(500).json({
@@ -135,32 +103,23 @@ export async function updateProduct(req: Request, res: Response) {
   }
 }
 
-export async function deleteProduct(req: Request, res: Response){
-    try {
-        const existing = await prisma.product.findUnique({
-            where: {
-                id: req.params.id as string,
-            }
-        })
+export async function deleteProduct(req: Request, res: Response) {
+  try {
+    const id = req.params.id as string
+    const existing = await productRepository.getProductById(id);
 
-        if (!existing) {
-            return res.status(404).json({
-                success: false,
-                error: "Product not found",
-            })
-        }
-
-        await prisma.product.delete({
-            where: {
-                id: req.params.id as string,
-            }
-        })
-
-        res.json({
-            success: true,
-            message: "Product deleted"
-        })
-    } catch (error) {
-        
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: "Product not found",
+      })
     }
+
+    await productRepository.deleteProduct(id);
+
+    res.json({
+      success: true,
+      message: "Product deleted",
+    })
+  } catch (error) {}
 }

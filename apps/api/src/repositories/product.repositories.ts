@@ -1,0 +1,62 @@
+import { prisma } from "@repo/db"
+import type { CreateProductInput, UpdateProductInput } from "@repo/shared"
+
+class ProductRepository {
+  async getProducts(page: number, limit: number, category?: string) {
+    const skip = (page - 1) * limit
+    const where = category ? { category } : {}
+
+    const [data, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
+      prisma.product.count({ where }),
+    ])
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    }
+  }
+
+  async getProductById(productId: string) {
+    return await prisma.product.findUnique({
+      where: {
+        id: productId,
+      },
+    })
+  }
+
+  async createProduct(data: CreateProductInput) {
+    return prisma.product.create({
+      data,
+    })
+  }
+
+  async updateProduct(id: string, data: UpdateProductInput) {
+    return prisma.product.update({
+      where: {
+        id,
+      },
+      data,
+    })
+  }
+
+  async deleteProduct(id: string){
+    return prisma.product.delete({
+      where: {
+        id,
+      },
+    })
+  }
+}
+
+export const productRepository = new ProductRepository()
