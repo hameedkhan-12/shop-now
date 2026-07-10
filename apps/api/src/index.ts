@@ -3,8 +3,15 @@ import productRoutes from "./routes/product.routes.js"
 const app = express()
 import dotenv from "dotenv";
 import cors from "cors"
+import { getEnvConfig } from "@repo/shared"
 
-dotenv.config()
+dotenv.config();
+
+// Load .env only in development
+const env = getEnvConfig();
+// Validate all required environment variables
+console.log(env.databaseUrl);
+
 const PORT = process.env.PORT || 4000
 
 app.use(express.json())

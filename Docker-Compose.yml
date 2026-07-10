@@ -1,5 +1,5 @@
 services:
-  #Primary PostgreSQL (reads + writes)
+  # Primary PostgreSQL (reads + writes)
   db-primary:
     image: bitnami/postgresql:latest
     container_name: ecommerce_db_primary
@@ -8,7 +8,6 @@ services:
       POSTGRESQL_USERNAME: postgres
       POSTGRESQL_PASSWORD: postgres
       POSTGRESQL_DATABASE: ecommerce
-      # Replication config
       POSTGRESQL_REPLICATION_MODE: master
       POSTGRESQL_REPLICATION_USER: replicator
       POSTGRESQL_REPLICATION_PASSWORD: replicator_secret
@@ -22,7 +21,7 @@ services:
       timeout: 5s
       retries: 10
 
-  #Read Replica (reads only, streams WAL from primary)
+  # Read Replica (streams WAL from primary)
   db-replica:
     image: bitnami/postgresql:latest
     container_name: ecommerce_db_replica
@@ -31,7 +30,6 @@ services:
       db-primary:
         condition: service_healthy
     environment:
-      # Slave mode — Bitnami handles pg_basebackup internally
       POSTGRESQL_REPLICATION_MODE: slave
       POSTGRESQL_MASTER_HOST: db-primary
       POSTGRESQL_MASTER_PORT_NUMBER: 5432
@@ -49,9 +47,11 @@ services:
       timeout: 5s
       retries: 10
 
-  #HAProxy (TCP load balancer + router)
+  # HAProxy - built from custom Dockerfile to fix Windows CRLF issue
   haproxy:
-    image: haproxy:2.9-alpine
+    build:
+      context: ./docker/haproxy
+      dockerfile: Dockerfile
     container_name: ecommerce_haproxy
     restart: unless-stopped
     depends_on:
@@ -60,11 +60,9 @@ services:
       db-replica:
         condition: service_healthy
     ports:
-      - "5000:5000"   # write port → primary only
-      - "5001:5001"   # read port  → primary + replica (round-robin)
-      - "8404:8404"   # stats dashboard → http://localhost:8404/stats
-    volumes:
-      - ./docker/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - "5000:5000"   # write port - primary only
+      - "5001:5001"   # read port  - primary + replica round-robin
+      - "8404:8404"   # stats dashboard
 
 volumes:
   pgdata_primary:

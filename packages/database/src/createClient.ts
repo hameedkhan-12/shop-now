@@ -1,6 +1,6 @@
+import { Pool } from "pg";
 import { PrismaClient } from "../generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
-
 
 const globalForPrisma = globalThis as {
   prismaClients?: Record<string, PrismaClient>;
@@ -10,8 +10,9 @@ export function createPrismaClient(
   name: string,
   connectionString: string
 ) {
+  console.log(connectionString);
   if (!globalForPrisma.prismaClients) {
-    globalForPrisma.prismaClients = {} as Record<string, PrismaClient>;
+    globalForPrisma.prismaClients = {};
   }
 
   if (
@@ -21,9 +22,11 @@ export function createPrismaClient(
     return globalForPrisma.prismaClients[name];
   }
 
-  const adapter = new PrismaPg({
+  const pool = new Pool({
     connectionString,
   });
+
+  const adapter = new PrismaPg(pool);
 
   const client = new PrismaClient({
     adapter,

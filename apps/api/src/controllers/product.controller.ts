@@ -1,6 +1,5 @@
 import type { Request, Response } from "express"
 
-import { prisma } from "@repo/db"
 import type { CreateProductInput, UpdateProductInput } from "@repo/shared"
 import { productRepository } from "../repositories/product.repositories.js"
 
