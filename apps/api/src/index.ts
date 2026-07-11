@@ -1,15 +1,13 @@
-import "./env.js";           // ← MUST be first import, loads dotenv before anything else
+import "./env.js";    
 
 import express from "express"
 import productRoutes from "./routes/product.routes.js"
 const app = express()
 import cors from "cors"
-import { getEnvConfig } from "@repo/shared"
+import { getApiConfig } from "@repo/shared"
 
-// Load .env only in development
-const env = getEnvConfig()
-// Validate all required environment variables
-console.log(env.databaseUrl)
+const env = getApiConfig()
+console.log(env.readDatabaseUrl)
 
 const PORT = process.env.PORT || 4000
 
