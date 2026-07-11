@@ -12,7 +12,7 @@ services:
       POSTGRESQL_REPLICATION_USER: replicator
       POSTGRESQL_REPLICATION_PASSWORD: replicator_secret
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata_primary:/bitnami/postgresql
     healthcheck:
@@ -38,7 +38,7 @@ services:
       POSTGRESQL_REPLICATION_USER: replicator
       POSTGRESQL_REPLICATION_PASSWORD: replicator_secret
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
       - pgdata_replica:/bitnami/postgresql
     healthcheck:

@@ -35,6 +35,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files - ignore local overrides only, commit .env and .env.example
+.env
 .env.local
 .env.*.local
 
