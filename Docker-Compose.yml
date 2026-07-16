@@ -1,71 +1,109 @@
+version: "3.9"
+
 services:
-  # Primary PostgreSQL (reads + writes)
-  db-primary:
-    image: bitnami/postgresql:latest
-    container_name: ecommerce_db_primary
+  api:
+    image: 397068653950.dkr.ecr.eu-north-1.amazonaws.com/shop-now-api:${IMAGE_TAG}
+    container_name: shop-now-api
     restart: unless-stopped
+
+    env_file:
+      - .env
+
+    depends_on:
+      db-primary:
+        condition: service_healthy
+
+    ports:
+      - "4000:4000"
+
+    networks:
+      - backend
+
+  db-primary:
+    image: bitnami/postgresql:17
+
+    container_name: ecommerce_db_primary
+
+    restart: unless-stopped
+
     environment:
       POSTGRESQL_USERNAME: postgres
       POSTGRESQL_PASSWORD: postgres
       POSTGRESQL_DATABASE: ecommerce
+
       POSTGRESQL_REPLICATION_MODE: master
       POSTGRESQL_REPLICATION_USER: replicator
       POSTGRESQL_REPLICATION_PASSWORD: replicator_secret
-    ports:
-      - "5433:5432"
+
     volumes:
       - pgdata_primary:/bitnami/postgresql
+
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  # Read Replica (streams WAL from primary)
+    networks:
+      - backend
+
   db-replica:
-    image: bitnami/postgresql:latest
+    image: bitnami/postgresql:17
+
     container_name: ecommerce_db_replica
+
     restart: unless-stopped
+
     depends_on:
       db-primary:
         condition: service_healthy
+
     environment:
       POSTGRESQL_REPLICATION_MODE: slave
       POSTGRESQL_MASTER_HOST: db-primary
       POSTGRESQL_MASTER_PORT_NUMBER: 5432
+
       POSTGRESQL_USERNAME: postgres
       POSTGRESQL_PASSWORD: postgres
+
       POSTGRESQL_REPLICATION_USER: replicator
       POSTGRESQL_REPLICATION_PASSWORD: replicator_secret
-    ports:
-      - "5434:5432"
+
     volumes:
       - pgdata_replica:/bitnami/postgresql
+
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  # HAProxy - built from custom Dockerfile to fix Windows CRLF issue
+    networks:
+      - backend
+
   haproxy:
-    build:
-      context: ./docker/haproxy
-      dockerfile: Dockerfile
+    image: 397068653950.dkr.ecr.eu-north-1.amazonaws.com/shop-now-haproxy:latest
     container_name: ecommerce_haproxy
     restart: unless-stopped
+
     depends_on:
       db-primary:
         condition: service_healthy
+
       db-replica:
         condition: service_healthy
-    ports:
-      - "5000:5000"   # write port - primary only
-      - "5001:5001"   # read port  - primary + replica round-robin
-      - "8404:8404"   # stats dashboard
 
-  api:
-    image:
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+      - "8404:8404"
+
+    networks:
+      - backend
+
 volumes:
   pgdata_primary:
   pgdata_replica:
+
+networks:
+  backend:
