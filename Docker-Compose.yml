@@ -64,6 +64,8 @@ services:
       - "5001:5001"   # read port  - primary + replica round-robin
       - "8404:8404"   # stats dashboard
 
+  api:
+    image:
 volumes:
   pgdata_primary:
   pgdata_replica:

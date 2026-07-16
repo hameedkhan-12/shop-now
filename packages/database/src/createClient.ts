@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import { PrismaClient } from "../generated/prisma/client.js";
+import { PrismaClient } from "./generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 const globalForPrisma = globalThis as {
@@ -10,7 +10,6 @@ export function createPrismaClient(
   name: string,
   connectionString: string
 ) {
-  console.log(connectionString);
   if (!globalForPrisma.prismaClients) {
     globalForPrisma.prismaClients = {};
   }
