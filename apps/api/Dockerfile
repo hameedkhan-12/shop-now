@@ -74,4 +74,4 @@ USER nodejs
 
 EXPOSE 4000
 
-CMD ["pnpm", "start"]
+CMD ["node", "dist/index.js"]
