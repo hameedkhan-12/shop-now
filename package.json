@@ -7,7 +7,8 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "turbo format",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "deploy:api": "pnpm deploy --filter api --prod ./deploy/api"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
