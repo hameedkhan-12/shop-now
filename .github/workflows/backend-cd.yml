@@ -37,10 +37,7 @@ jobs:
 
       - uses: aws-actions/amazon-ecr-login@v2
 
-      ########################################################
       # API
-      ########################################################
-
       - name: Build API
         run: |
           docker build \
@@ -49,10 +46,7 @@ jobs:
             -t $ECR_REGISTRY/shop-now-api:latest \
             .
 
-      ########################################################
       # Migration
-      ########################################################
-
       - name: Build Migration
         run: |
           docker build \
@@ -60,8 +54,6 @@ jobs:
             -t $ECR_REGISTRY/shop-now-migrate:${{ github.sha }} \
             -t $ECR_REGISTRY/shop-now-migrate:latest \
             .
-
-      ########################################################
 
       - name: Push API
         run: |
