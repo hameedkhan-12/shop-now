@@ -41,7 +41,6 @@ FROM installer AS deploy
 
 RUN pnpm deploy --filter api --prod /prod
 
-############################
 # Runtime
 FROM node:22-alpine AS runner
 
