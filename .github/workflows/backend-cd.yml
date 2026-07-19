@@ -67,7 +67,7 @@ jobs:
           docker push $ECR_REGISTRY/shop-now-migrate:${{ github.sha }}
           docker push $ECR_REGISTRY/shop-now-migrate:latest
 
-      ########################################################
+      #####################################################
 
       - name: Deploy
         uses: appleboy/ssh-action@v1.2.0
