@@ -38,8 +38,7 @@ COPY --from=pruner /app/out/full/ .
 RUN pnpm --filter=@repo/db db:generate
 
 # Build Workspace
-RUN pnpm turbo run build
-
+RUN pnpm exec turbo run build
 # Deploy Production Package
 RUN pnpm deploy --filter=api --prod /prod
 
