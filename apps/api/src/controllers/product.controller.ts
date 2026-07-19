@@ -19,7 +19,7 @@ export async function getProducts(req: Request, res: Response) {
     console.error(error)
     res.status(500).json({
       success: false,
-      error: "Failed to fetch products",
+      error: "Failed to fetch productss",
     })
   }
 }
