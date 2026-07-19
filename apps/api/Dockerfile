@@ -38,7 +38,6 @@ RUN pnpm exec turbo run build
 
 ############################
 # Production API
-############################
 FROM installer AS deploy
 
 RUN pnpm deploy --filter api --prod /prod
