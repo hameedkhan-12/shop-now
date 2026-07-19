@@ -15,11 +15,11 @@ WORKDIR /app
 # Prune Workspace
 FROM base AS pruner
 
-RUN pnpm add -g turbo
+RUN corepack prepare pnpm@10.33.4 --activate
 
 COPY . .
 
-RUN turbo prune api --docker
+RUN pnpm exec turbo prune api --docker
 
 # Install Dependencies
 FROM base AS installer
