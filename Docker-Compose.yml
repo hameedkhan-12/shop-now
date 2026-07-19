@@ -2,16 +2,16 @@ version: "3.9"
 
 services:
   api:
-    image: 397068653950.dkr.ecr.eu-north-1.amazonaws.com/shop-now-api:${IMAGE_TAG}
+    image: 397068653950.dkr.ecr.eu-north-1.amazonaws.com/shop-now-api:${IMAGE_TAG:-latest}
     container_name: shop-now-api
     restart: unless-stopped
 
     env_file:
-      - .env
+      - .env.api
 
     depends_on:
-      db-primary:
-        condition: service_healthy
+      haproxy:
+        condition: service_started
 
     ports:
       - "4000:4000"
@@ -22,8 +22,7 @@ services:
   db-primary:
     image: bitnami/postgresql:17
 
-    container_name: ecommerce_db_primary
-
+    container_name: ecommerce-db-primary
     restart: unless-stopped
 
     environment:
@@ -36,11 +35,11 @@ services:
       POSTGRESQL_REPLICATION_PASSWORD: replicator_secret
 
     volumes:
-      - pgdata_primary:/bitnami/postgresql
+      - postgres_primary:/bitnami/postgresql
 
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 10
 
@@ -50,8 +49,7 @@ services:
   db-replica:
     image: bitnami/postgresql:17
 
-    container_name: ecommerce_db_replica
-
+    container_name: ecommerce-db-replica
     restart: unless-stopped
 
     depends_on:
@@ -70,11 +68,11 @@ services:
       POSTGRESQL_REPLICATION_PASSWORD: replicator_secret
 
     volumes:
-      - pgdata_replica:/bitnami/postgresql
+      - postgres_replica:/bitnami/postgresql
 
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 10
 
@@ -82,14 +80,13 @@ services:
       - backend
 
   haproxy:
-    image: 397068653950.dkr.ecr.eu-north-1.amazonaws.com/shop-now-haproxy:latest
-    container_name: ecommerce_haproxy
+    image: 397068653950.dkr.ecr.eu-north-1.amazonaws.com/shop-now-haproxy:${IMAGE_TAG:-latest}
+    container_name: ecommerce-haproxy
     restart: unless-stopped
 
     depends_on:
       db-primary:
         condition: service_healthy
-
       db-replica:
         condition: service_healthy
 
@@ -102,8 +99,9 @@ services:
       - backend
 
 volumes:
-  pgdata_primary:
-  pgdata_replica:
+  postgres_primary:
+  postgres_replica:
 
 networks:
   backend:
+    driver: bridge
