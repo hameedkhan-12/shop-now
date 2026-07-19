@@ -1,8 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-############################
 # Base
-############################
 FROM node:22-alpine AS base
 
 RUN apk add --no-cache libc6-compat
@@ -14,9 +12,7 @@ RUN corepack enable && corepack prepare pnpm@10.33.4 --activate
 
 WORKDIR /app
 
-############################
 # Prune Workspace
-############################
 FROM base AS pruner
 
 COPY . .
@@ -24,9 +20,7 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm exec turbo prune api --docker
 
-############################
 # Install
-############################
 FROM base AS installer
 
 COPY --from=pruner /app/out/json/ .
