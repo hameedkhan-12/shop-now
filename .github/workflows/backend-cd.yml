@@ -41,6 +41,7 @@ jobs:
       - name: Build API
         run: |
           docker build \
+            -f apps/api/Dockerfile \
             --target runner \
             -t $ECR_REGISTRY/shop-now-api:${{ github.sha }} \
             -t $ECR_REGISTRY/shop-now-api:latest \

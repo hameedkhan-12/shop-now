@@ -36,7 +36,6 @@ RUN pnpm --filter @repo/db db:generate
 
 RUN pnpm exec turbo run build
 
-############################
 # Production API
 FROM installer AS deploy
 
