@@ -51,6 +51,7 @@ jobs:
       - name: Build Migration
         run: |
           docker build \
+            -f apps/api/Dockerfile \
             --target installer \
             -t $ECR_REGISTRY/shop-now-migrate:${{ github.sha }} \
             -t $ECR_REGISTRY/shop-now-migrate:latest \

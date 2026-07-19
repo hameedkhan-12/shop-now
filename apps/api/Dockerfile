@@ -43,7 +43,6 @@ RUN pnpm deploy --filter api --prod /prod
 
 ############################
 # Runtime
-############################
 FROM node:22-alpine AS runner
 
 RUN apk add --no-cache libc6-compat
