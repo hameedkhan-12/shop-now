@@ -4,57 +4,60 @@ on:
   push:
     branches:
       - main
+
     paths:
       - "docker/haproxy/**"
 
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+
 jobs:
-  build-and-push:
+  deploy:
+
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
 
-    env:
-      AWS_REGION: ${{ secrets.AWS_REGION }}
-      ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_HAPROXY }}
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+      - uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build Docker image
+      - name: Build HAProxy
         run: |
           docker build \
-            -t $ECR_REPOSITORY:${{ github.sha }} \
-            -t $ECR_REPOSITORY:latest \
+            -t $ECR_REGISTRY/shop-now-haproxy:${{ github.sha }} \
+            -t $ECR_REGISTRY/shop-now-haproxy:latest \
             -f docker/haproxy/Dockerfile \
             docker/haproxy
 
-      - name: Tag image for ECR
+      - name: Push HAProxy
         run: |
-          docker tag $ECR_REPOSITORY:${{ github.sha }} \
-            ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:${{ github.sha }}
+          docker push $ECR_REGISTRY/shop-now-haproxy:${{ github.sha }}
+          docker push $ECR_REGISTRY/shop-now-haproxy:latest
 
-          docker tag $ECR_REPOSITORY:latest \
-            ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:latest
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.2.0
 
-      - name: Push commit SHA tag
-        run: |
-          docker push \
-            ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:${{ github.sha }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
 
-      - name: Push latest tag
-        run: |
-          docker push \
-            ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:latest
+          script: |
+            cd ~/shop-now
+
+            docker compose pull haproxy
+
+            docker compose up -d haproxy
+
+            docker image prune -f

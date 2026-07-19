@@ -1,8 +1,6 @@
-version: "3.9"
-
 services:
   api:
-    image: 397068653950.dkr.ecr.eu-north-1.amazonaws.com/shop-now-api:${IMAGE_TAG:-latest}
+    image: 397068653950.dkr.ecr.eu-north-1.amazonaws.com/shop-now-api:${API_IMAGE_TAG}
     container_name: shop-now-api
     restart: unless-stopped
 
@@ -19,8 +17,29 @@ services:
     networks:
       - backend
 
+  migrate:
+    image: 397068653950.dkr.ecr.eu-north-1.amazonaws.com/shop-now-migrate:${API_IMAGE_TAG}
+    container_name: shop-now-migrate
+
+    env_file:
+      - .env.api
+
+    depends_on:
+      haproxy:
+        condition: service_started
+
+    command:
+      - pnpm
+      - --filter=@repo/db
+      - db:deploy
+
+    restart: "no"
+
+    networks:
+      - backend
+
   db-primary:
-    image: bitnami/postgresql:17
+    image: bitnami/postgresql:latest
 
     container_name: ecommerce-db-primary
     restart: unless-stopped
@@ -47,7 +66,7 @@ services:
       - backend
 
   db-replica:
-    image: bitnami/postgresql:17
+    image: bitnami/postgresql:latest
 
     container_name: ecommerce-db-replica
     restart: unless-stopped
@@ -80,7 +99,7 @@ services:
       - backend
 
   haproxy:
-    image: 397068653950.dkr.ecr.eu-north-1.amazonaws.com/shop-now-haproxy:${IMAGE_TAG:-latest}
+    image: 397068653950.dkr.ecr.eu-north-1.amazonaws.com/shop-now-haproxy:${HAPROXY_IMAGE_TAG}
     container_name: ecommerce-haproxy
     restart: unless-stopped
 

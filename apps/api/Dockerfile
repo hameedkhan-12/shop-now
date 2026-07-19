@@ -21,12 +21,11 @@ FROM base AS pruner
 
 COPY . .
 
-# turbo is already a devDependency in the repo
 RUN pnpm install --frozen-lockfile
 RUN pnpm exec turbo prune api --docker
 
 ############################
-# Install dependencies
+# Install
 ############################
 FROM base AS installer
 
@@ -39,19 +38,15 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
 
 COPY --from=pruner /app/out/full/ .
 
-############################
-# Generate Prisma Client
-############################
 RUN pnpm --filter @repo/db db:generate
 
-############################
-# Build packages
-############################
 RUN pnpm exec turbo run build
 
 ############################
-# Create deployable package
+# Production API
 ############################
+FROM installer AS deploy
+
 RUN pnpm deploy --filter api --prod /prod
 
 ############################
@@ -61,17 +56,17 @@ FROM node:22-alpine AS runner
 
 RUN apk add --no-cache libc6-compat
 
-ENV NODE_ENV=production
-
 WORKDIR /app
+
+ENV NODE_ENV=production
 
 RUN addgroup -S nodejs && \
     adduser -S nodejs -G nodejs
 
-COPY --from=installer --chown=nodejs:nodejs /prod/ ./
+COPY --from=deploy --chown=nodejs:nodejs /prod .
 
 USER nodejs
 
 EXPOSE 4000
 
-CMD ["node", "dist/index.js"]
+CMD ["node","dist/index.js"]

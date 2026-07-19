@@ -1,53 +1,99 @@
-name: Backend Deploy
+name: Backend CD
 
 on:
   push:
     branches:
       - main
+
     paths:
       - "apps/api/**"
       - "packages/**"
+      - "Dockerfile"
       - "package.json"
       - "pnpm-lock.yaml"
       - "turbo.json"
 
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+
 jobs:
   deploy:
+
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
 
     steps:
+
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+      - uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build Docker image
+      ########################################################
+      # API
+      ########################################################
+
+      - name: Build API
         run: |
           docker build \
-            -f apps/api/Dockerfile \
-            -t ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }} \
-            -t ${{ secrets.ECR_REPOSITORY }}:latest \
+            --target runner \
+            -t $ECR_REGISTRY/shop-now-api:${{ github.sha }} \
+            -t $ECR_REGISTRY/shop-now-api:latest \
             .
 
-      - name: Push image
+      ########################################################
+      # Migration
+      ########################################################
+
+      - name: Build Migration
         run: |
-          docker push ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
-          docker push ${{ secrets.ECR_REPOSITORY }}:latest
+          docker build \
+            --target installer \
+            -t $ECR_REGISTRY/shop-now-migrate:${{ github.sha }} \
+            -t $ECR_REGISTRY/shop-now-migrate:latest \
+            .
+
+      ########################################################
+
+      - name: Push API
+        run: |
+          docker push $ECR_REGISTRY/shop-now-api:${{ github.sha }}
+          docker push $ECR_REGISTRY/shop-now-api:latest
+
+      - name: Push Migration
+        run: |
+          docker push $ECR_REGISTRY/shop-now-migrate:${{ github.sha }}
+          docker push $ECR_REGISTRY/shop-now-migrate:latest
+
+      ########################################################
+
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.2.0
+
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+
+          script: |
+            cd ~/shop-now
+
+            echo IMAGE_TAG=${{ github.sha }} > .env
+
+            docker compose pull
+
+            docker compose up -d db-primary db-replica haproxy
+
+            docker compose run --rm migrate
+
+            docker compose up -d api
+
+            docker image prune -f
