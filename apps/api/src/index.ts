@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 4000
 app.use(express.json())
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001"],
+    origin: ["https://shop-now-web.vercel.app", "http://localhost:3001"],
   })
 )
 app.use("/api/products", productRoutes)
