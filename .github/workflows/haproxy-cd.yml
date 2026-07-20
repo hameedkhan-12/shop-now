@@ -1,4 +1,4 @@
-name: Backend CD
+name: HAProxy CD
 
 on:
   push:
@@ -6,84 +6,47 @@ on:
       - main
 
     paths:
-      - "apps/api/**"
-      - "packages/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - "turbo.json"
-      - "apps/api/Dockerfile"
+      - "docker/haproxy/**"
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
-  ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
 
 jobs:
   deploy:
+
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      ########################################################
-      # Build API
-      ########################################################
-
-      - name: Build API Image
+      - name: Build HAProxy
         run: |
           docker build \
-            -f apps/api/Dockerfile \
-            --target runner \
-            -t $ECR_REGISTRY/shop-now-api:${{ github.sha }} \
-            -t $ECR_REGISTRY/shop-now-api:latest \
-            .
+            -t ${{ steps.login-ecr.outputs.registry }}/shop-now-haproxy:${{ github.sha }} \
+            -t ${{ steps.login-ecr.outputs.registry }}/shop-now-haproxy:latest \
+            -f docker/haproxy/Dockerfile \
+            docker/haproxy
 
-      ########################################################
-      # Build Migration
-      ########################################################
-
-      - name: Build Migration Image
+      - name: Push HAProxy
         run: |
-          docker build \
-            -f apps/api/Dockerfile \
-            --target installer \
-            -t $ECR_REGISTRY/shop-now-migrate:${{ github.sha }} \
-            -t $ECR_REGISTRY/shop-now-migrate:latest \
-            .
+          docker push ${{ steps.login-ecr.outputs.registry }}/shop-now-haproxy:${{ github.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/shop-now-haproxy:latest
 
-      ########################################################
-      # Push Images
-      ########################################################
-
-      - name: Push API Image
-        run: |
-          docker push $ECR_REGISTRY/shop-now-api:${{ github.sha }}
-          docker push $ECR_REGISTRY/shop-now-api:latest
-
-      - name: Push Migration Image
-        run: |
-          docker push $ECR_REGISTRY/shop-now-migrate:${{ github.sha }}
-          docker push $ECR_REGISTRY/shop-now-migrate:latest
-
-      ########################################################
-      # Deploy
-      ########################################################
-
-      - name: Deploy to EC2
+      - name: Deploy
         uses: appleboy/ssh-action@v1.2.0
 
         with:
@@ -96,38 +59,27 @@ jobs:
 
             cd ~/shop-now
 
-            echo "Updating repository..."
-            git fetch origin
-            git reset --hard origin/main
-
             echo "Writing image tags..."
 
             cat > .env <<EOF
-            ECR_REGISTRY=${{ secrets.ECR_REGISTRY }}
-            API_IMAGE_TAG=${{ github.sha }}
-            HAPROXY_IMAGE_TAG=latest
+            ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
+            HAPROXY_IMAGE_TAG=${{ github.sha }}
             EOF
+
+            echo "Verifying .env contents:"
+            cat .env
 
             echo "Logging in to ECR on EC2..."
             aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
-              docker login --username AWS --password-stdin $ECR_REGISTRY
+              docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
 
-            echo "Pulling latest images..."
-            docker compose pull api migrate
+            echo "Pulling latest HAProxy image..."
+            docker compose pull haproxy
 
-            echo "Starting database..."
-            docker compose up -d db-primary db-replica
-
-            echo "Waiting for database..."
-            sleep 10
-
-            echo "Running migrations..."
-            docker compose run --rm migrate
-
-            echo "Starting API..."
-            docker compose up -d api
+            echo "Starting HAProxy..."
+            docker compose up -d haproxy
 
             echo "Cleaning old images..."
-            docker image prune -af
+            docker image prune -f
 
-            echo "Deployment completed successfully!"
+            echo "HAProxy deployment completed successfully!"

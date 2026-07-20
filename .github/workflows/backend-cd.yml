@@ -16,7 +16,6 @@ on:
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
-  ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
 
 jobs:
   deploy:
@@ -37,6 +36,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       ########################################################
@@ -48,8 +48,8 @@ jobs:
           docker build \
             -f apps/api/Dockerfile \
             --target runner \
-            -t $ECR_REGISTRY/shop-now-api:${{ github.sha }} \
-            -t $ECR_REGISTRY/shop-now-api:latest \
+            -t ${{ steps.login-ecr.outputs.registry }}/shop-now-api:${{ github.sha }} \
+            -t ${{ steps.login-ecr.outputs.registry }}/shop-now-api:latest \
             .
 
       ########################################################
@@ -61,8 +61,8 @@ jobs:
           docker build \
             -f apps/api/Dockerfile \
             --target installer \
-            -t $ECR_REGISTRY/shop-now-migrate:${{ github.sha }} \
-            -t $ECR_REGISTRY/shop-now-migrate:latest \
+            -t ${{ steps.login-ecr.outputs.registry }}/shop-now-migrate:${{ github.sha }} \
+            -t ${{ steps.login-ecr.outputs.registry }}/shop-now-migrate:latest \
             .
 
       ########################################################
@@ -71,13 +71,13 @@ jobs:
 
       - name: Push API Image
         run: |
-          docker push $ECR_REGISTRY/shop-now-api:${{ github.sha }}
-          docker push $ECR_REGISTRY/shop-now-api:latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/shop-now-api:${{ github.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/shop-now-api:latest
 
       - name: Push Migration Image
         run: |
-          docker push $ECR_REGISTRY/shop-now-migrate:${{ github.sha }}
-          docker push $ECR_REGISTRY/shop-now-migrate:latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/shop-now-migrate:${{ github.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/shop-now-migrate:latest
 
       ########################################################
       # Deploy
@@ -103,9 +103,17 @@ jobs:
             echo "Writing image tags..."
 
             cat > .env <<EOF
+            ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
             API_IMAGE_TAG=${{ github.sha }}
             HAPROXY_IMAGE_TAG=latest
             EOF
+
+            echo "Verifying .env contents:"
+            cat .env
+
+            echo "Logging in to ECR on EC2..."
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+              docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
 
             echo "Pulling latest images..."
             docker compose pull api migrate
