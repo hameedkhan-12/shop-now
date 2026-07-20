@@ -1,13 +1,11 @@
 services:
   api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-
+    image: 397068653950.dkr.ecr.eu-north-1.amazonaws.com/shop-now-api:${API_IMAGE_TAG}
     container_name: shop-now-api
+    restart: unless-stopped
 
     env_file:
-      - /apps/api/.env
+      - .env.api
 
     depends_on:
       haproxy:
@@ -16,11 +14,26 @@ services:
     ports:
       - "4000:4000"
 
-    volumes:
-      - .:/app
-      - /app/node_modules
+    networks:
+      - backend
 
-    restart: unless-stopped
+  migrate:
+    image: 397068653950.dkr.ecr.eu-north-1.amazonaws.com/shop-now-migrate:${API_IMAGE_TAG}
+    container_name: shop-now-migrate
+
+    env_file:
+      - .env.api
+
+    depends_on:
+      haproxy:
+        condition: service_started
+
+    command:
+      - pnpm
+      - --filter=@repo/db
+      - db:deploy
+
+    restart: "no"
 
     networks:
       - backend
@@ -29,7 +42,6 @@ services:
     image: bitnami/postgresql:latest
 
     container_name: ecommerce-db-primary
-
     restart: unless-stopped
 
     environment:
@@ -57,7 +69,6 @@ services:
     image: bitnami/postgresql:latest
 
     container_name: ecommerce-db-replica
-
     restart: unless-stopped
 
     depends_on:
@@ -88,12 +99,8 @@ services:
       - backend
 
   haproxy:
-    build:
-      context: ./docker/haproxy
-      dockerfile: Dockerfile
-
+    image: 397068653950.dkr.ecr.eu-north-1.amazonaws.com/shop-now-haproxy:${HAPROXY_IMAGE_TAG}
     container_name: ecommerce-haproxy
-
     restart: unless-stopped
 
     depends_on:
