@@ -1,8 +1,6 @@
 services:
   api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+    image: ${ECR_REGISTRY}/shop-now-api:${API_IMAGE_TAG}
 
     container_name: shop-now-api
 
@@ -16,19 +14,13 @@ services:
     ports:
       - "4000:4000"
 
-    volumes:
-      - .:/app
-      - /app/node_modules
-
     restart: unless-stopped
 
     networks:
       - backend
 
   migrate:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+    image: ${ECR_REGISTRY}/shop-now-migrate:${API_IMAGE_TAG}
 
     container_name: shop-now-migrate
 
@@ -45,10 +37,6 @@ services:
       - |
         pnpm --filter @repo/db db:deploy && \
         pnpm --filter @repo/db db:seed
-
-    volumes:
-      - .:/app
-      - /app/node_modules
 
     restart: "no"
 
@@ -118,9 +106,7 @@ services:
       - backend
 
   haproxy:
-    build:
-      context: ./docker/haproxy
-      dockerfile: Dockerfile
+    image: ${ECR_REGISTRY}/shop-now-haproxy:${HAPROXY_IMAGE_TAG}
 
     container_name: ecommerce-haproxy
 
