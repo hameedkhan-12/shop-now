@@ -70,8 +70,7 @@ jobs:
             cat .env
 
             echo "Logging in to ECR on EC2..."
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
-              docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
 
             echo "Pulling latest HAProxy image..."
             docker compose pull haproxy
