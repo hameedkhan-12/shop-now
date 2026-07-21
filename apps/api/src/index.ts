@@ -1,4 +1,4 @@
-import "./env.js";    
+import "./env.js"
 
 import express from "express"
 import productRoutes from "./routes/product.routes.js"
@@ -14,7 +14,12 @@ const PORT = process.env.PORT || 4000
 app.use(express.json())
 app.use(
   cors({
-    origin: ["https://shop-now-web.vercel.app", "http://localhost:3001"],
+    origin: [
+      "https://shop-now-web.vercel.app",
+      "https://shop-now-admin-s1j6.vercel.app",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 )
 app.use("/api/products", productRoutes)
