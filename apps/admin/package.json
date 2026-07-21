@@ -12,6 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@repo/shared": "workspace:*",
+    "@workspace/ui": "workspace:*",
     "@teispace/next-themes": "^2.0.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
