@@ -6,11 +6,8 @@ import type {
   UpdateProductInput,
 } from "@repo/shared"
 
-console.log(process.env.NEXT_PUBLIC_API_URL)
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"
-console.log(BASE_URL)
 const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY!
-console.log(ADMIN_KEY)
 
 async function fetcher<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
